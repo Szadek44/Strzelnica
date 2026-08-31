@@ -1,4 +1,9 @@
-import type { AdministratorStrzelnicy, Strzelnica, WpisLoguMaili } from "./types.js";
+import type {
+  AdministratorPlatformy,
+  AdministratorStrzelnicy,
+  Strzelnica,
+  WpisLoguMaili,
+} from "./types.js";
 
 export interface DaneRejestracjiStrzelnicy {
   nazwa: string;
@@ -11,6 +16,11 @@ export interface DaneRejestracjiStrzelnicy {
   adminHasloHash: string;
 }
 
+export interface DaneAdministratoraPlatformy {
+  email: string;
+  hasloHash: string;
+}
+
 export interface Repository {
   utworzStrzelnice(
     dane: DaneRejestracjiStrzelnicy,
@@ -20,7 +30,23 @@ export interface Repository {
     email: string,
   ): Promise<AdministratorStrzelnicy | undefined>;
 
+  znajdzAdministratoraStrzelnicyPoStrzelnicaId(
+    strzelnicaId: string,
+  ): Promise<AdministratorStrzelnicy | undefined>;
+
   znajdzStrzelnicePoId(id: string): Promise<Strzelnica | undefined>;
+
+  listujStrzelniceOczekujace(): Promise<Strzelnica[]>;
+
+  zatwierdzStrzelnice(id: string): Promise<Strzelnica | undefined>;
+
+  utworzAdministratoraPlatformy(
+    dane: DaneAdministratoraPlatformy,
+  ): Promise<AdministratorPlatformy>;
+
+  znajdzAdministratoraPlatformyPoEmail(
+    email: string,
+  ): Promise<AdministratorPlatformy | undefined>;
 
   dodajWpisLoguMaili(
     wpis: Omit<WpisLoguMaili, "id" | "wyslanoAt">,

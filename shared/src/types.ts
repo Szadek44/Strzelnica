@@ -18,6 +18,12 @@ export interface AdministratorStrzelnicy {
   hasloHash: string;
 }
 
+export interface AdministratorPlatformy {
+  id: string;
+  email: string;
+  hasloHash: string;
+}
+
 export interface WpisLoguMaili {
   id: string;
   do: string;
