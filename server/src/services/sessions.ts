@@ -1,24 +1,23 @@
 import { randomUUID } from "node:crypto";
 
-export interface SesjaAdministratoraStrzelnicy {
-  administratorId: string;
-  strzelnicaId: string;
-}
+export type Sesja =
+  | { rola: "administratorStrzelnicy"; administratorId: string; strzelnicaId: string }
+  | { rola: "administratorPlatformy"; administratorId: string };
 
 /**
- * Tokeny sesyjne administratorów strzelnicy trzymane w pamięci serwera
- * (bez ciasteczek/JWT na tym etapie — Implementation Decisions w spec #1).
+ * Tokeny sesyjne administratorów (strzelnicy i platformy) trzymane w pamięci
+ * serwera (bez ciasteczek/JWT na tym etapie — Implementation Decisions w spec #1).
  */
 export class SessionStore {
-  private readonly sesje = new Map<string, SesjaAdministratoraStrzelnicy>();
+  private readonly sesje = new Map<string, Sesja>();
 
-  create(sesja: SesjaAdministratoraStrzelnicy): string {
+  create(sesja: Sesja): string {
     const token = randomUUID();
     this.sesje.set(token, sesja);
     return token;
   }
 
-  get(token: string): SesjaAdministratoraStrzelnicy | undefined {
+  get(token: string): Sesja | undefined {
     return this.sesje.get(token);
   }
 }

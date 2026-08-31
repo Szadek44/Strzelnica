@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type {
+  AdministratorPlatformy,
   AdministratorStrzelnicy,
+  DaneAdministratoraPlatformy,
   DaneRejestracjiStrzelnicy,
   Repository,
   Strzelnica,
@@ -14,6 +16,7 @@ import type {
 export class InMemoryRepository implements Repository {
   private readonly strzelnice = new Map<string, Strzelnica>();
   private readonly administratorzyStrzelnicy = new Map<string, AdministratorStrzelnicy>();
+  private readonly administratorzyPlatformy = new Map<string, AdministratorPlatformy>();
   private readonly logMaili: WpisLoguMaili[] = [];
 
   async utworzStrzelnice(
@@ -53,8 +56,56 @@ export class InMemoryRepository implements Repository {
     return undefined;
   }
 
+  async znajdzAdministratoraStrzelnicyPoStrzelnicaId(
+    strzelnicaId: string,
+  ): Promise<AdministratorStrzelnicy | undefined> {
+    for (const administrator of this.administratorzyStrzelnicy.values()) {
+      if (administrator.strzelnicaId === strzelnicaId) {
+        return administrator;
+      }
+    }
+    return undefined;
+  }
+
   async znajdzStrzelnicePoId(id: string): Promise<Strzelnica | undefined> {
     return this.strzelnice.get(id);
+  }
+
+  async listujStrzelniceOczekujace(): Promise<Strzelnica[]> {
+    return [...this.strzelnice.values()].filter((strzelnica) => strzelnica.status === "oczekujaca");
+  }
+
+  async zatwierdzStrzelnice(id: string): Promise<Strzelnica | undefined> {
+    const strzelnica = this.strzelnice.get(id);
+    if (!strzelnica) {
+      return undefined;
+    }
+    const zatwierdzona: Strzelnica = { ...strzelnica, status: "zatwierdzona" };
+    this.strzelnice.set(id, zatwierdzona);
+    return zatwierdzona;
+  }
+
+  async utworzAdministratoraPlatformy(
+    dane: DaneAdministratoraPlatformy,
+  ): Promise<AdministratorPlatformy> {
+    const administrator: AdministratorPlatformy = {
+      id: randomUUID(),
+      email: dane.email,
+      hasloHash: dane.hasloHash,
+    };
+    this.administratorzyPlatformy.set(administrator.id, administrator);
+    return administrator;
+  }
+
+  async znajdzAdministratoraPlatformyPoEmail(
+    email: string,
+  ): Promise<AdministratorPlatformy | undefined> {
+    for (const administrator of this.administratorzyPlatformy.values()) {
+      if (administrator.email.toLowerCase() === email.toLowerCase()) {
+        return administrator;
+      }
+    }
+    return undefined;
   }
 
   async dodajWpisLoguMaili(

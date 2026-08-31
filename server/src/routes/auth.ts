@@ -20,6 +20,7 @@ export function createAuthRouter(repository: Repository, sessions: SessionStore)
     }
 
     const token = sessions.create({
+      rola: "administratorStrzelnicy",
       administratorId: administrator.id,
       strzelnicaId: administrator.strzelnicaId,
     });
