@@ -99,4 +99,8 @@ export interface Repository {
   utworzRezerwacje(dane: DaneUtworzeniaRezerwacji): Promise<Rezerwacja>;
 
   listujAktywneRezerwacjeOsiWDniu(osId: string, data: string): Promise<Rezerwacja[]>;
+
+  znajdzRezerwacjePoTokenie(tokenAnulowania: string): Promise<Rezerwacja | undefined>;
+
+  anulujRezerwacje(id: string): Promise<Rezerwacja | undefined>;
 }

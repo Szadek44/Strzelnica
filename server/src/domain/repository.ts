@@ -192,4 +192,23 @@ export class InMemoryRepository implements Repository {
         rezerwacja.osIds.includes(osId),
     );
   }
+
+  async znajdzRezerwacjePoTokenie(tokenAnulowania: string): Promise<Rezerwacja | undefined> {
+    for (const rezerwacja of this.rezerwacje.values()) {
+      if (rezerwacja.tokenAnulowania === tokenAnulowania) {
+        return rezerwacja;
+      }
+    }
+    return undefined;
+  }
+
+  async anulujRezerwacje(id: string): Promise<Rezerwacja | undefined> {
+    const rezerwacja = this.rezerwacje.get(id);
+    if (!rezerwacja) {
+      return undefined;
+    }
+    const anulowana: Rezerwacja = { ...rezerwacja, status: "anulowana" };
+    this.rezerwacje.set(id, anulowana);
+    return anulowana;
+  }
 }

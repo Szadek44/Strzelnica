@@ -2,6 +2,7 @@ import cors from "cors";
 import express, { type Express } from "express";
 import type { Repository } from "@strzelnica/shared";
 import { createAdministratorzyPlatformyRouter } from "./routes/administratorzyPlatformy.js";
+import { createAnulowanieRouter } from "./routes/anulowanie.js";
 import { createAuthRouter } from "./routes/auth.js";
 import { createDevRouter } from "./routes/dev.js";
 import { createGrafikRouter } from "./routes/grafik.js";
@@ -23,6 +24,7 @@ export function createApp(repository: Repository): Express {
   app.use(createOsieRouter(repository, sessions));
   app.use(createKatalogRouter(repository));
   app.use(createRezerwacjeRouter(repository));
+  app.use(createAnulowanieRouter(repository));
   app.use(createDevRouter(repository));
   return app;
 }
