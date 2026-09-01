@@ -9,36 +9,45 @@ import {
 } from "../domain/dostepnosc.js";
 import { wyslijMail } from "../services/mailer.js";
 
-interface KontekstOsi {
-  strzelnica: Strzelnica;
-  os: Os;
-  grafik: Grafik;
+type Blad = { blad: string; status: number };
+
+function czyBlad<T>(kontekst: T | Blad): kontekst is Blad {
+  return typeof kontekst === "object" && kontekst !== null && "blad" in kontekst;
 }
 
-async function zaladujKontekstOsi(
+async function zaladujStrzelnicaIGrafik(
   repository: Repository,
   strzelnicaId: string,
-  osId: string,
-): Promise<KontekstOsi | { blad: string; status: number }> {
+): Promise<{ strzelnica: Strzelnica; grafik: Grafik } | Blad> {
   const strzelnica = await repository.znajdzStrzelnicePoId(strzelnicaId);
   if (!strzelnica || strzelnica.status !== "zatwierdzona") {
     return { status: 404, blad: "Nie znaleziono Strzelnicy" };
-  }
-  const os = await repository.znajdzOsPoId(osId);
-  if (!os || os.strzelnicaId !== strzelnicaId) {
-    return { status: 404, blad: "Nie znaleziono Osi" };
   }
   const grafik = await repository.znajdzGrafikPoStrzelnicaId(strzelnicaId);
   if (!grafik) {
     return { status: 404, blad: "Grafik nie został jeszcze ustawiony dla tej Strzelnicy" };
   }
-  return { strzelnica, os, grafik };
+  return { strzelnica, grafik };
 }
 
-function czyKontekstBlad(
-  kontekst: KontekstOsi | { blad: string; status: number },
-): kontekst is { blad: string; status: number } {
-  return "blad" in kontekst;
+async function zaladujOs(repository: Repository, strzelnicaId: string, osId: string): Promise<Os | Blad> {
+  const os = await repository.znajdzOsPoId(osId);
+  if (!os || os.strzelnicaId !== strzelnicaId) {
+    return { status: 404, blad: "Nie znaleziono Osi" };
+  }
+  return os;
+}
+
+async function zaladujOsie(repository: Repository, strzelnicaId: string, osIds: string[]): Promise<Os[] | Blad> {
+  const osie: Os[] = [];
+  for (const osId of osIds) {
+    const os = await zaladujOs(repository, strzelnicaId, osId);
+    if (czyBlad(os)) {
+      return os;
+    }
+    osie.push(os);
+  }
+  return osie;
 }
 
 async function wolneSloty(
@@ -59,23 +68,32 @@ async function wolneSloty(
 }
 
 interface UtworzRezerwacjeBody {
-  osId?: unknown;
+  osIds?: unknown;
   data?: unknown;
   slotOd?: unknown;
+  czasTrwaniaMinut?: unknown;
   klientImie?: unknown;
   klientTelefon?: unknown;
   klientEmail?: unknown;
 }
 
 function walidujBladRezerwacji(body: UtworzRezerwacjeBody): string | undefined {
-  if (typeof body.osId !== "string" || body.osId.trim() === "") {
-    return "Wymagane jest wskazanie Osi";
+  if (
+    !Array.isArray(body.osIds) ||
+    body.osIds.length === 0 ||
+    !body.osIds.every((id) => typeof id === "string" && id.trim() !== "") ||
+    new Set(body.osIds).size !== body.osIds.length
+  ) {
+    return "Wymagane jest wskazanie co najmniej jednej Osi (bez powtórzeń)";
   }
   if (typeof body.data !== "string" || !walidujFormatDaty(body.data)) {
     return "Data musi być w formacie RRRR-MM-DD";
   }
   if (typeof body.slotOd !== "string" || body.slotOd.trim() === "") {
-    return "Wymagany jest wybór slotu";
+    return "Wymagany jest wybór slotu początkowego";
+  }
+  if (typeof body.czasTrwaniaMinut !== "number" || !Number.isInteger(body.czasTrwaniaMinut) || body.czasTrwaniaMinut <= 0) {
+    return "Czas trwania rezerwacji musi być dodatnią liczbą minut";
   }
   if (typeof body.klientImie !== "string" || body.klientImie.trim() === "") {
     return "Imię jest wymagane";
@@ -99,13 +117,18 @@ export function createRezerwacjeRouter(repository: Repository): Router {
       return;
     }
 
-    const kontekst = await zaladujKontekstOsi(repository, req.params.strzelnicaId, req.params.osId);
-    if (czyKontekstBlad(kontekst)) {
+    const kontekst = await zaladujStrzelnicaIGrafik(repository, req.params.strzelnicaId);
+    if (czyBlad(kontekst)) {
       res.status(kontekst.status).json({ blad: kontekst.blad });
       return;
     }
+    const os = await zaladujOs(repository, req.params.strzelnicaId, req.params.osId);
+    if (czyBlad(os)) {
+      res.status(os.status).json({ blad: os.blad });
+      return;
+    }
 
-    const sloty = await wolneSloty(repository, kontekst.os.id, data, kontekst.grafik);
+    const sloty = await wolneSloty(repository, os.id, data, kontekst.grafik);
     res.status(200).json({ sloty });
   });
 
@@ -117,43 +140,64 @@ export function createRezerwacjeRouter(repository: Repository): Router {
       return;
     }
     const dane = {
-      osId: body.osId as string,
+      osIds: body.osIds as string[],
       data: body.data as string,
       slotOd: body.slotOd as string,
+      czasTrwaniaMinut: body.czasTrwaniaMinut as number,
       klientImie: body.klientImie as string,
       klientTelefon: body.klientTelefon as string,
       klientEmail: body.klientEmail as string,
     };
 
-    const kontekst = await zaladujKontekstOsi(repository, req.params.strzelnicaId, dane.osId);
-    if (czyKontekstBlad(kontekst)) {
+    const kontekst = await zaladujStrzelnicaIGrafik(repository, req.params.strzelnicaId);
+    if (czyBlad(kontekst)) {
       res.status(kontekst.status).json({ blad: kontekst.blad });
       return;
     }
-    const { strzelnica, os, grafik } = kontekst;
+    const { strzelnica, grafik } = kontekst;
 
-    const dostepne = await wolneSloty(repository, os.id, dane.data, grafik);
-    if (!czyBlokMiesciSieWSlotach([dane.slotOd], dostepne)) {
-      res.status(400).json({ blad: "Wybrany slot jest niedostępny" });
+    if (dane.czasTrwaniaMinut % grafik.dlugoscSlotuMinut !== 0) {
+      res.status(400).json({
+        blad: `Czas trwania rezerwacji musi być wielokrotnością długości slotu (${grafik.dlugoscSlotuMinut} min)`,
+      });
+      return;
+    }
+    const liczbaSlotow = dane.czasTrwaniaMinut / grafik.dlugoscSlotuMinut;
+    const potrzebneSloty = slotyRezerwacji(dane.slotOd, liczbaSlotow, grafik.dlugoscSlotuMinut);
+
+    const osie = await zaladujOsie(repository, strzelnica.id, dane.osIds);
+    if (czyBlad(osie)) {
+      res.status(osie.status).json({ blad: osie.blad });
       return;
     }
 
+    for (const os of osie) {
+      const dostepne = await wolneSloty(repository, os.id, dane.data, grafik);
+      if (!czyBlokMiesciSieWSlotach(potrzebneSloty, dostepne)) {
+        res.status(400).json({ blad: `Wybrany przedział czasu jest niedostępny na Osi "${os.nazwa}"` });
+        return;
+      }
+    }
+
+    const cenaCalkowita = osie.reduce((suma, os) => suma + os.cenaZaSlot * liczbaSlotow, 0);
+
     const rezerwacja = await repository.utworzRezerwacje({
       strzelnicaId: strzelnica.id,
-      osIds: [os.id],
+      osIds: osie.map((os) => os.id),
       data: dane.data,
       slotOd: dane.slotOd,
-      liczbaSlotow: 1,
-      cenaCalkowita: os.cenaZaSlot,
+      liczbaSlotow,
+      cenaCalkowita,
       klientImie: dane.klientImie,
       klientTelefon: dane.klientTelefon,
       klientEmail: dane.klientEmail,
     });
 
+    const nazwyOsi = osie.map((os) => `"${os.nazwa}"`).join(", ");
     await wyslijMail(repository, {
       do: rezerwacja.klientEmail,
       temat: "Potwierdzenie rezerwacji",
-      tresc: `Rezerwacja Osi "${os.nazwa}" w Strzelnicy "${strzelnica.nazwa}" na ${rezerwacja.data} od ${rezerwacja.slotOd} została przyjęta. Cena: ${rezerwacja.cenaCalkowita} zł. Link do anulowania: /rezerwacje/anuluj/${rezerwacja.tokenAnulowania}`,
+      tresc: `Rezerwacja Osi ${nazwyOsi} w Strzelnicy "${strzelnica.nazwa}" na ${rezerwacja.data} od ${rezerwacja.slotOd} (${dane.czasTrwaniaMinut} min) została przyjęta. Cena: ${rezerwacja.cenaCalkowita} zł. Link do anulowania: /rezerwacje/anuluj/${rezerwacja.tokenAnulowania}`,
     });
 
     res.status(201).json({ rezerwacja });
