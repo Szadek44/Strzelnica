@@ -1,6 +1,9 @@
 import type {
   AdministratorPlatformy,
   AdministratorStrzelnicy,
+  Grafik,
+  GodzinyOtwarcia,
+  Os,
   Strzelnica,
   WpisLoguMaili,
 } from "./types.js";
@@ -19,6 +22,20 @@ export interface DaneRejestracjiStrzelnicy {
 export interface DaneAdministratoraPlatformy {
   email: string;
   hasloHash: string;
+}
+
+export interface DaneGrafiku {
+  dlugoscSlotuMinut: number;
+  limitAnulowaniaGodzin: number;
+  godzinyOtwarcia: GodzinyOtwarcia;
+}
+
+export interface DaneDodaniaOsi {
+  strzelnicaId: string;
+  nazwa: string;
+  dystansMetrow: number;
+  dozwoloneTypyBroni: string[];
+  cenaZaSlot: number;
 }
 
 export interface Repository {
@@ -53,4 +70,14 @@ export interface Repository {
   ): Promise<WpisLoguMaili>;
 
   listujLogMaili(): Promise<WpisLoguMaili[]>;
+
+  ustawGrafik(strzelnicaId: string, dane: DaneGrafiku): Promise<Grafik>;
+
+  znajdzGrafikPoStrzelnicaId(strzelnicaId: string): Promise<Grafik | undefined>;
+
+  dodajOs(dane: DaneDodaniaOsi): Promise<Os>;
+
+  znajdzOsPoId(id: string): Promise<Os | undefined>;
+
+  listujOsieStrzelnicy(strzelnicaId: string): Promise<Os[]>;
 }

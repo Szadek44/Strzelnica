@@ -3,7 +3,11 @@ import type {
   AdministratorPlatformy,
   AdministratorStrzelnicy,
   DaneAdministratoraPlatformy,
+  DaneDodaniaOsi,
+  DaneGrafiku,
   DaneRejestracjiStrzelnicy,
+  Grafik,
+  Os,
   Repository,
   Strzelnica,
   WpisLoguMaili,
@@ -18,6 +22,8 @@ export class InMemoryRepository implements Repository {
   private readonly administratorzyStrzelnicy = new Map<string, AdministratorStrzelnicy>();
   private readonly administratorzyPlatformy = new Map<string, AdministratorPlatformy>();
   private readonly logMaili: WpisLoguMaili[] = [];
+  private readonly grafiki = new Map<string, Grafik>();
+  private readonly osie = new Map<string, Os>();
 
   async utworzStrzelnice(
     dane: DaneRejestracjiStrzelnicy,
@@ -122,5 +128,29 @@ export class InMemoryRepository implements Repository {
 
   async listujLogMaili(): Promise<WpisLoguMaili[]> {
     return [...this.logMaili];
+  }
+
+  async ustawGrafik(strzelnicaId: string, dane: DaneGrafiku): Promise<Grafik> {
+    const grafik: Grafik = { strzelnicaId, ...dane };
+    this.grafiki.set(strzelnicaId, grafik);
+    return grafik;
+  }
+
+  async znajdzGrafikPoStrzelnicaId(strzelnicaId: string): Promise<Grafik | undefined> {
+    return this.grafiki.get(strzelnicaId);
+  }
+
+  async dodajOs(dane: DaneDodaniaOsi): Promise<Os> {
+    const os: Os = { id: randomUUID(), ...dane };
+    this.osie.set(os.id, os);
+    return os;
+  }
+
+  async znajdzOsPoId(id: string): Promise<Os | undefined> {
+    return this.osie.get(id);
+  }
+
+  async listujOsieStrzelnicy(strzelnicaId: string): Promise<Os[]> {
+    return [...this.osie.values()].filter((os) => os.strzelnicaId === strzelnicaId);
   }
 }
