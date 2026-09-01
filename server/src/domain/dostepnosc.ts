@@ -1,4 +1,4 @@
-import { DNI_TYGODNIA, type DzienTygodnia, type GodzinyOtwarciaDnia } from "@strzelnica/shared";
+import { DNI_TYGODNIA, type DzienTygodnia, type GodzinyOtwarciaDnia, type Grafik } from "@strzelnica/shared";
 
 const DATA_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -55,4 +55,26 @@ export function slotyRezerwacji(slotOd: string, liczbaSlotow: number, dlugoscSlo
 export function czyBlokMiesciSieWSlotach(blok: string[], sloty: string[]): boolean {
   const dostepne = new Set(sloty);
   return blok.every((slot) => dostepne.has(slot));
+}
+
+export interface PotrzebneSloty {
+  liczbaSlotow: number;
+  sloty: string[];
+}
+
+/**
+ * Waliduje, że `czasTrwaniaMinut` jest wielokrotnością długości slotu Strzelnicy
+ * (wspólny wymóg rezerwacji z #7 i blokad z #9), i wylicza sloty startowe, jakie
+ * zajmuje żądanie długości `czasTrwaniaMinut` zaczynające się o `slotOd`.
+ */
+export function obliczPotrzebneSloty(
+  grafik: Grafik,
+  slotOd: string,
+  czasTrwaniaMinut: number,
+): PotrzebneSloty | { blad: string } {
+  if (czasTrwaniaMinut % grafik.dlugoscSlotuMinut !== 0) {
+    return { blad: `Czas trwania musi być wielokrotnością długości slotu (${grafik.dlugoscSlotuMinut} min)` };
+  }
+  const liczbaSlotow = czasTrwaniaMinut / grafik.dlugoscSlotuMinut;
+  return { liczbaSlotow, sloty: slotyRezerwacji(slotOd, liczbaSlotow, grafik.dlugoscSlotuMinut) };
 }

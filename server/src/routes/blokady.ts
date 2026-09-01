@@ -3,10 +3,12 @@ import type { Repository } from "@strzelnica/shared";
 import {
   czyBlokMiesciSieWSlotach,
   dzienTygodniaZDaty,
+  obliczPotrzebneSloty,
   slotyRezerwacji,
   walidujFormatDaty,
   wygenerujSlotyDnia,
 } from "../domain/dostepnosc.js";
+import { czyBlad, zaladujOs } from "./kontekstStrzelnicy.js";
 import { wymagaRoli } from "../middleware/autoryzacja.js";
 import type { RequestZSesja } from "../middleware/autoryzacja.js";
 import type { SessionStore } from "../services/sessions.js";
@@ -64,9 +66,9 @@ export function createBlokadyRouter(repository: Repository, sessions: SessionSto
       };
 
       const { strzelnicaId } = (req as RequestZSesja).sesja as { strzelnicaId: string };
-      const os = await repository.znajdzOsPoId(dane.osId);
-      if (!os || os.strzelnicaId !== strzelnicaId) {
-        res.status(404).json({ blad: "Nie znaleziono Osi" });
+      const os = await zaladujOs(repository, strzelnicaId, dane.osId);
+      if (czyBlad(os)) {
+        res.status(os.status).json({ blad: os.blad });
         return;
       }
       const grafik = await repository.znajdzGrafikPoStrzelnicaId(strzelnicaId);
@@ -75,14 +77,12 @@ export function createBlokadyRouter(repository: Repository, sessions: SessionSto
         return;
       }
 
-      if (dane.czasTrwaniaMinut % grafik.dlugoscSlotuMinut !== 0) {
-        res.status(400).json({
-          blad: `Czas trwania blokady musi być wielokrotnością długości slotu (${grafik.dlugoscSlotuMinut} min)`,
-        });
+      const potrzebne = obliczPotrzebneSloty(grafik, dane.slotOd, dane.czasTrwaniaMinut);
+      if ("blad" in potrzebne) {
+        res.status(400).json({ blad: potrzebne.blad });
         return;
       }
-      const liczbaSlotow = dane.czasTrwaniaMinut / grafik.dlugoscSlotuMinut;
-      const potrzebneSloty = slotyRezerwacji(dane.slotOd, liczbaSlotow, grafik.dlugoscSlotuMinut);
+      const { liczbaSlotow, sloty: potrzebneSloty } = potrzebne;
 
       const dzienTygodnia = dzienTygodniaZDaty(dane.data);
       const slotyDnia = wygenerujSlotyDnia(grafik.godzinyOtwarcia[dzienTygodnia], grafik.dlugoscSlotuMinut);

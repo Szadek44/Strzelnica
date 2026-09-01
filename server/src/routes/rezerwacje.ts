@@ -1,54 +1,15 @@
 import { Router } from "express";
-import type { Grafik, Os, Repository, Strzelnica } from "@strzelnica/shared";
+import type { Grafik, Repository } from "@strzelnica/shared";
 import {
   czyBlokMiesciSieWSlotach,
   dzienTygodniaZDaty,
+  obliczPotrzebneSloty,
   slotyRezerwacji,
   walidujFormatDaty,
   wygenerujSlotyDnia,
 } from "../domain/dostepnosc.js";
+import { czyBlad, zaladujOs, zaladujOsie, zaladujStrzelnicaIGrafik } from "./kontekstStrzelnicy.js";
 import { wyslijMail } from "../services/mailer.js";
-
-type Blad = { blad: string; status: number };
-
-function czyBlad<T>(kontekst: T | Blad): kontekst is Blad {
-  return typeof kontekst === "object" && kontekst !== null && "blad" in kontekst;
-}
-
-async function zaladujStrzelnicaIGrafik(
-  repository: Repository,
-  strzelnicaId: string,
-): Promise<{ strzelnica: Strzelnica; grafik: Grafik } | Blad> {
-  const strzelnica = await repository.znajdzStrzelnicePoId(strzelnicaId);
-  if (!strzelnica || strzelnica.status !== "zatwierdzona") {
-    return { status: 404, blad: "Nie znaleziono Strzelnicy" };
-  }
-  const grafik = await repository.znajdzGrafikPoStrzelnicaId(strzelnicaId);
-  if (!grafik) {
-    return { status: 404, blad: "Grafik nie został jeszcze ustawiony dla tej Strzelnicy" };
-  }
-  return { strzelnica, grafik };
-}
-
-async function zaladujOs(repository: Repository, strzelnicaId: string, osId: string): Promise<Os | Blad> {
-  const os = await repository.znajdzOsPoId(osId);
-  if (!os || os.strzelnicaId !== strzelnicaId) {
-    return { status: 404, blad: "Nie znaleziono Osi" };
-  }
-  return os;
-}
-
-async function zaladujOsie(repository: Repository, strzelnicaId: string, osIds: string[]): Promise<Os[] | Blad> {
-  const osie: Os[] = [];
-  for (const osId of osIds) {
-    const os = await zaladujOs(repository, strzelnicaId, osId);
-    if (czyBlad(os)) {
-      return os;
-    }
-    osie.push(os);
-  }
-  return osie;
-}
 
 export async function wolneSloty(
   repository: Repository,
@@ -80,7 +41,7 @@ interface UtworzRezerwacjeBody {
   klientEmail?: unknown;
 }
 
-function walidujBladRezerwacji(body: UtworzRezerwacjeBody): string | undefined {
+function walidujBlad(body: UtworzRezerwacjeBody): string | undefined {
   if (
     !Array.isArray(body.osIds) ||
     body.osIds.length === 0 ||
@@ -137,7 +98,7 @@ export function createRezerwacjeRouter(repository: Repository): Router {
 
   router.post("/api/katalog/strzelnice/:strzelnicaId/rezerwacje", async (req, res) => {
     const body = req.body as UtworzRezerwacjeBody;
-    const bladWalidacji = walidujBladRezerwacji(body);
+    const bladWalidacji = walidujBlad(body);
     if (bladWalidacji) {
       res.status(400).json({ blad: bladWalidacji });
       return;
@@ -159,14 +120,12 @@ export function createRezerwacjeRouter(repository: Repository): Router {
     }
     const { strzelnica, grafik } = kontekst;
 
-    if (dane.czasTrwaniaMinut % grafik.dlugoscSlotuMinut !== 0) {
-      res.status(400).json({
-        blad: `Czas trwania rezerwacji musi być wielokrotnością długości slotu (${grafik.dlugoscSlotuMinut} min)`,
-      });
+    const potrzebne = obliczPotrzebneSloty(grafik, dane.slotOd, dane.czasTrwaniaMinut);
+    if ("blad" in potrzebne) {
+      res.status(400).json({ blad: potrzebne.blad });
       return;
     }
-    const liczbaSlotow = dane.czasTrwaniaMinut / grafik.dlugoscSlotuMinut;
-    const potrzebneSloty = slotyRezerwacji(dane.slotOd, liczbaSlotow, grafik.dlugoscSlotuMinut);
+    const { liczbaSlotow, sloty: potrzebneSloty } = potrzebne;
 
     const osie = await zaladujOsie(repository, strzelnica.id, dane.osIds);
     if (czyBlad(osie)) {
@@ -200,7 +159,7 @@ export function createRezerwacjeRouter(repository: Repository): Router {
     await wyslijMail(repository, {
       do: rezerwacja.klientEmail,
       temat: "Potwierdzenie rezerwacji",
-      tresc: `Rezerwacja Osi ${nazwyOsi} w Strzelnicy "${strzelnica.nazwa}" na ${rezerwacja.data} od ${rezerwacja.slotOd} (${dane.czasTrwaniaMinut} min) została przyjęta. Cena: ${rezerwacja.cenaCalkowita} zł. Link do anulowania: /rezerwacje/anuluj/${rezerwacja.tokenAnulowania}`,
+      tresc: `Rezerwacja Osi ${nazwyOsi} w Strzelnicy "${strzelnica.nazwa}" na ${rezerwacja.data} od ${rezerwacja.slotOd} (${dane.czasTrwaniaMinut} min) została przyjęta. Cena: ${rezerwacja.cenaCalkowita} zł. Link do anulowania: /api/rezerwacje/anulowanie/${rezerwacja.tokenAnulowania}`,
     });
 
     res.status(201).json({ rezerwacja });
