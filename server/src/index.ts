@@ -3,7 +3,7 @@ import { czyZasiewacDanePrzykladowe, zasiejDanePrzykladowe } from "./domain/dane
 import { InMemoryRepository } from "./domain/repository.js";
 import { hashPassword } from "./services/passwords.js";
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
+const PORT = process.env.SERVER_PORT ? Number(process.env.SERVER_PORT) : 3001;
 
 const DEMO_ADMIN_PLATFORMY_EMAIL = process.env.ADMIN_PLATFORMY_EMAIL ?? "admin@platforma.pl";
 const DEMO_ADMIN_PLATFORMY_HASLO = process.env.ADMIN_PLATFORMY_HASLO ?? "admin1234";
