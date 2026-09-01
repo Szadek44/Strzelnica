@@ -23,6 +23,34 @@ async function utworzRezerwacje(
   return res.body.rezerwacja as { tokenAnulowania: string; data: string; slotOd: string };
 }
 
+describe("GET /api/rezerwacje/anulowanie/:token", () => {
+  it("pokazuje szczegóły Rezerwacji dla poprawnego tokenu, bez logowania i bez jej anulowania", async () => {
+    const repository = new InMemoryRepository();
+    const app = createApp(repository);
+    const { strzelnicaId, os } = await przygotujStrzelniceZOsia(app, repository, {
+      rejestracja: { nazwa: "Strzelnica Podglądowa" },
+    });
+    const rezerwacja = await utworzRezerwacje(app, strzelnicaId, os.id);
+
+    const res = await request(app).get(`/api/rezerwacje/anulowanie/${rezerwacja.tokenAnulowania}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.strzelnicaNazwa).toBe("Strzelnica Podglądowa");
+    expect(res.body.rezerwacja).toMatchObject({ status: "potwierdzona", slotOd: "09:00" });
+
+    const sprawdzenie = await repository.znajdzRezerwacjePoTokenie(rezerwacja.tokenAnulowania);
+    expect(sprawdzenie?.status).toBe("potwierdzona");
+  });
+
+  it("zwraca 404 dla nieznanego tokenu", async () => {
+    const app = createApp(new InMemoryRepository());
+
+    const res = await request(app).get("/api/rezerwacje/anulowanie/nieznany-token");
+
+    expect(res.status).toBe(404);
+  });
+});
+
 describe("POST /api/rezerwacje/anulowanie/:token", () => {
   it("pozwala klientowi anulować własną Rezerwację wyłącznie tokenem, bez logowania", async () => {
     const repository = new InMemoryRepository();

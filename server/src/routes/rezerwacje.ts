@@ -156,10 +156,11 @@ export function createRezerwacjeRouter(repository: Repository): Router {
     });
 
     const nazwyOsi = osie.map((os) => `"${os.nazwa}"`).join(", ");
+    const webUrl = process.env.WEB_URL ?? "http://localhost:5173";
     await wyslijMail(repository, {
       do: rezerwacja.klientEmail,
       temat: "Potwierdzenie rezerwacji",
-      tresc: `Rezerwacja Osi ${nazwyOsi} w Strzelnicy "${strzelnica.nazwa}" na ${rezerwacja.data} od ${rezerwacja.slotOd} (${dane.czasTrwaniaMinut} min) została przyjęta. Cena: ${rezerwacja.cenaCalkowita} zł. Link do anulowania: /api/rezerwacje/anulowanie/${rezerwacja.tokenAnulowania}`,
+      tresc: `Rezerwacja Osi ${nazwyOsi} w Strzelnicy "${strzelnica.nazwa}" na ${rezerwacja.data} od ${rezerwacja.slotOd} (${dane.czasTrwaniaMinut} min) została przyjęta. Cena: ${rezerwacja.cenaCalkowita} zł. Link do anulowania: ${webUrl}/rezerwacje/anulowanie/${rezerwacja.tokenAnulowania}`,
     });
 
     res.status(201).json({ rezerwacja });

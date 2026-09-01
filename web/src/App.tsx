@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { WymagaAdministratoraPlatformy } from "./auth/WymagaAdministratoraPlatformy";
 import { WymagaAdministratoraStrzelnicy } from "./auth/WymagaAdministratoraStrzelnicy";
 import { TopNav } from "./components/TopNav";
+import { AnulowanieRezerwacji } from "./pages/AnulowanieRezerwacji";
 import { GrafikOsie } from "./pages/GrafikOsie";
 import { Katalog } from "./pages/Katalog";
 import { LogowanieAdministratoraPlatformy } from "./pages/LogowanieAdministratoraPlatformy";
@@ -18,6 +19,7 @@ export function App() {
       <Routes>
         <Route path="/" element={<Katalog />} />
         <Route path="/strzelnice/:id" element={<ProfilStrzelnicy />} />
+        <Route path="/rezerwacje/anulowanie/:token" element={<AnulowanieRezerwacji />} />
         <Route path="/rejestracja" element={<RejestracjaStrzelnicy />} />
         <Route path="/administrator-strzelnicy/logowanie" element={<LogowanieAdministratoraStrzelnicy />} />
         <Route

@@ -10,6 +10,16 @@ function godzinDoTerminu(data: string, slotOd: string): number {
 export function createAnulowanieRouter(repository: Repository): Router {
   const router = Router();
 
+  router.get("/api/rezerwacje/anulowanie/:token", async (req, res) => {
+    const rezerwacja = await repository.znajdzRezerwacjePoTokenie(req.params.token);
+    if (!rezerwacja) {
+      res.status(404).json({ blad: "Nie znaleziono Rezerwacji dla podanego tokenu" });
+      return;
+    }
+    const strzelnica = await repository.znajdzStrzelnicePoId(rezerwacja.strzelnicaId);
+    res.status(200).json({ rezerwacja, strzelnicaNazwa: strzelnica?.nazwa });
+  });
+
   router.post("/api/rezerwacje/anulowanie/:token", async (req, res) => {
     const rezerwacja = await repository.znajdzRezerwacjePoTokenie(req.params.token);
     if (!rezerwacja) {
