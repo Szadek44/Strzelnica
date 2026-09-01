@@ -1,6 +1,11 @@
 import type {
   AdministratorPlatformy,
   AdministratorStrzelnicy,
+  Blokada,
+  Grafik,
+  GodzinyOtwarcia,
+  Os,
+  Rezerwacja,
   Strzelnica,
   WpisLoguMaili,
 } from "./types.js";
@@ -21,6 +26,41 @@ export interface DaneAdministratoraPlatformy {
   hasloHash: string;
 }
 
+export interface DaneGrafiku {
+  dlugoscSlotuMinut: number;
+  limitAnulowaniaGodzin: number;
+  godzinyOtwarcia: GodzinyOtwarcia;
+}
+
+export interface DaneDodaniaOsi {
+  strzelnicaId: string;
+  nazwa: string;
+  dystansMetrow: number;
+  dozwoloneTypyBroni: string[];
+  cenaZaSlot: number;
+}
+
+export interface DaneUtworzeniaRezerwacji {
+  strzelnicaId: string;
+  osIds: string[];
+  data: string;
+  slotOd: string;
+  liczbaSlotow: number;
+  cenaCalkowita: number;
+  klientImie: string;
+  klientTelefon: string;
+  klientEmail: string;
+}
+
+export interface DaneUtworzeniaBlokady {
+  strzelnicaId: string;
+  osId: string;
+  data: string;
+  slotOd: string;
+  liczbaSlotow: number;
+  powod?: string;
+}
+
 export interface Repository {
   utworzStrzelnice(
     dane: DaneRejestracjiStrzelnicy,
@@ -38,6 +78,8 @@ export interface Repository {
 
   listujStrzelniceOczekujace(): Promise<Strzelnica[]>;
 
+  listujStrzelniceZatwierdzone(filtrTekstowy?: string): Promise<Strzelnica[]>;
+
   zatwierdzStrzelnice(id: string): Promise<Strzelnica | undefined>;
 
   utworzAdministratoraPlatformy(
@@ -53,4 +95,30 @@ export interface Repository {
   ): Promise<WpisLoguMaili>;
 
   listujLogMaili(): Promise<WpisLoguMaili[]>;
+
+  ustawGrafik(strzelnicaId: string, dane: DaneGrafiku): Promise<Grafik>;
+
+  znajdzGrafikPoStrzelnicaId(strzelnicaId: string): Promise<Grafik | undefined>;
+
+  dodajOs(dane: DaneDodaniaOsi): Promise<Os>;
+
+  znajdzOsPoId(id: string): Promise<Os | undefined>;
+
+  listujOsieStrzelnicy(strzelnicaId: string): Promise<Os[]>;
+
+  utworzRezerwacje(dane: DaneUtworzeniaRezerwacji): Promise<Rezerwacja>;
+
+  listujAktywneRezerwacjeOsiWDniu(osId: string, data: string): Promise<Rezerwacja[]>;
+
+  znajdzRezerwacjePoTokenie(tokenAnulowania: string): Promise<Rezerwacja | undefined>;
+
+  anulujRezerwacje(id: string): Promise<Rezerwacja | undefined>;
+
+  listujRezerwacjeStrzelnicy(strzelnicaId: string): Promise<Rezerwacja[]>;
+
+  utworzBlokade(dane: DaneUtworzeniaBlokady): Promise<Blokada>;
+
+  usunBlokade(id: string, strzelnicaId: string): Promise<boolean>;
+
+  listujAktywneBlokadyOsiWDniu(osId: string, data: string): Promise<Blokada[]>;
 }

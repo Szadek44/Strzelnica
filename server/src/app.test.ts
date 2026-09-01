@@ -231,4 +231,17 @@ describe("Kolejka i zatwierdzanie Strzelnic przez Administratora platformy", () 
 
     expect(res.status).toBe(403);
   });
+
+  it("odrzuca token Administratora platformy na endpointach Administratora strzelnicy", async () => {
+    const repository = new InMemoryRepository();
+    const app = createApp(repository);
+    const platformaDane = await zasiejAdministratoraPlatformy(repository);
+    const platformaToken = await zalogujAdministratoraPlatformy(app, platformaDane);
+
+    const res = await request(app)
+      .get("/api/administratorzy-strzelnicy/osie")
+      .set("Authorization", `Bearer ${platformaToken}`);
+
+    expect(res.status).toBe(403);
+  });
 });
