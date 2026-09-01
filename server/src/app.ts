@@ -4,11 +4,13 @@ import type { Repository } from "@strzelnica/shared";
 import { createAdministratorzyPlatformyRouter } from "./routes/administratorzyPlatformy.js";
 import { createAnulowanieRouter } from "./routes/anulowanie.js";
 import { createAuthRouter } from "./routes/auth.js";
+import { createBlokadyRouter } from "./routes/blokady.js";
 import { createDevRouter } from "./routes/dev.js";
 import { createGrafikRouter } from "./routes/grafik.js";
 import { createKatalogRouter } from "./routes/katalog.js";
 import { createOsieRouter } from "./routes/osie.js";
 import { createRezerwacjeRouter } from "./routes/rezerwacje.js";
+import { createRezerwacjeAdminRouter } from "./routes/rezerwacjeAdmin.js";
 import { createStrzelniceRouter } from "./routes/strzelnice.js";
 import { SessionStore } from "./services/sessions.js";
 
@@ -25,6 +27,8 @@ export function createApp(repository: Repository): Express {
   app.use(createKatalogRouter(repository));
   app.use(createRezerwacjeRouter(repository));
   app.use(createAnulowanieRouter(repository));
+  app.use(createRezerwacjeAdminRouter(repository, sessions));
+  app.use(createBlokadyRouter(repository, sessions));
   app.use(createDevRouter(repository));
   return app;
 }

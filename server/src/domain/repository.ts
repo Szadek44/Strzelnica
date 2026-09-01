@@ -2,10 +2,12 @@ import { randomUUID } from "node:crypto";
 import type {
   AdministratorPlatformy,
   AdministratorStrzelnicy,
+  Blokada,
   DaneAdministratoraPlatformy,
   DaneDodaniaOsi,
   DaneGrafiku,
   DaneRejestracjiStrzelnicy,
+  DaneUtworzeniaBlokady,
   DaneUtworzeniaRezerwacji,
   Grafik,
   Os,
@@ -27,6 +29,7 @@ export class InMemoryRepository implements Repository {
   private readonly grafiki = new Map<string, Grafik>();
   private readonly osie = new Map<string, Os>();
   private readonly rezerwacje = new Map<string, Rezerwacja>();
+  private readonly blokady = new Map<string, Blokada>();
 
   async utworzStrzelnice(
     dane: DaneRejestracjiStrzelnicy,
@@ -210,5 +213,28 @@ export class InMemoryRepository implements Repository {
     const anulowana: Rezerwacja = { ...rezerwacja, status: "anulowana" };
     this.rezerwacje.set(id, anulowana);
     return anulowana;
+  }
+
+  async listujRezerwacjeStrzelnicy(strzelnicaId: string): Promise<Rezerwacja[]> {
+    return [...this.rezerwacje.values()].filter((rezerwacja) => rezerwacja.strzelnicaId === strzelnicaId);
+  }
+
+  async utworzBlokade(dane: DaneUtworzeniaBlokady): Promise<Blokada> {
+    const blokada: Blokada = { id: randomUUID(), ...dane };
+    this.blokady.set(blokada.id, blokada);
+    return blokada;
+  }
+
+  async usunBlokade(id: string, strzelnicaId: string): Promise<boolean> {
+    const blokada = this.blokady.get(id);
+    if (!blokada || blokada.strzelnicaId !== strzelnicaId) {
+      return false;
+    }
+    this.blokady.delete(id);
+    return true;
+  }
+
+  async listujAktywneBlokadyOsiWDniu(osId: string, data: string): Promise<Blokada[]> {
+    return [...this.blokady.values()].filter((blokada) => blokada.osId === osId && blokada.data === data);
   }
 }

@@ -1,6 +1,7 @@
 import type {
   AdministratorPlatformy,
   AdministratorStrzelnicy,
+  Blokada,
   Grafik,
   GodzinyOtwarcia,
   Os,
@@ -49,6 +50,15 @@ export interface DaneUtworzeniaRezerwacji {
   klientImie: string;
   klientTelefon: string;
   klientEmail: string;
+}
+
+export interface DaneUtworzeniaBlokady {
+  strzelnicaId: string;
+  osId: string;
+  data: string;
+  slotOd: string;
+  liczbaSlotow: number;
+  powod?: string;
 }
 
 export interface Repository {
@@ -103,4 +113,12 @@ export interface Repository {
   znajdzRezerwacjePoTokenie(tokenAnulowania: string): Promise<Rezerwacja | undefined>;
 
   anulujRezerwacje(id: string): Promise<Rezerwacja | undefined>;
+
+  listujRezerwacjeStrzelnicy(strzelnicaId: string): Promise<Rezerwacja[]>;
+
+  utworzBlokade(dane: DaneUtworzeniaBlokady): Promise<Blokada>;
+
+  usunBlokade(id: string, strzelnicaId: string): Promise<boolean>;
+
+  listujAktywneBlokadyOsiWDniu(osId: string, data: string): Promise<Blokada[]>;
 }

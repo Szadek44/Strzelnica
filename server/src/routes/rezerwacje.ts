@@ -50,7 +50,7 @@ async function zaladujOsie(repository: Repository, strzelnicaId: string, osIds: 
   return osie;
 }
 
-async function wolneSloty(
+export async function wolneSloty(
   repository: Repository,
   osId: string,
   data: string,
@@ -58,10 +58,13 @@ async function wolneSloty(
 ): Promise<string[]> {
   const dzienTygodnia = dzienTygodniaZDaty(data);
   const wszystkieSloty = wygenerujSlotyDnia(grafik.godzinyOtwarcia[dzienTygodnia], grafik.dlugoscSlotuMinut);
-  const rezerwacje = await repository.listujAktywneRezerwacjeOsiWDniu(osId, data);
+  const [rezerwacje, blokady] = await Promise.all([
+    repository.listujAktywneRezerwacjeOsiWDniu(osId, data),
+    repository.listujAktywneBlokadyOsiWDniu(osId, data),
+  ]);
   const zajete = new Set(
-    rezerwacje.flatMap((rezerwacja) =>
-      slotyRezerwacji(rezerwacja.slotOd, rezerwacja.liczbaSlotow, grafik.dlugoscSlotuMinut),
+    [...rezerwacje, ...blokady].flatMap((wpis) =>
+      slotyRezerwacji(wpis.slotOd, wpis.liczbaSlotow, grafik.dlugoscSlotuMinut),
     ),
   );
   return wszystkieSloty.filter((slot) => !zajete.has(slot));

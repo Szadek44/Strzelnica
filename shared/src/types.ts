@@ -83,3 +83,13 @@ export interface Rezerwacja {
   status: StatusRezerwacji;
   utworzonoAt: string;
 }
+
+export interface Blokada {
+  id: string;
+  strzelnicaId: string;
+  osId: string;
+  data: string;
+  slotOd: string;
+  liczbaSlotow: number;
+  powod?: string;
+}
