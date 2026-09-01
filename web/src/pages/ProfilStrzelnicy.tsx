@@ -1,13 +1,15 @@
-import type { Os, Strzelnica } from "@strzelnica/shared";
+import type { Grafik, Os, Strzelnica } from "@strzelnica/shared";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { pobierzProfilStrzelnicy } from "../api/katalog";
+import { RezerwacjaSekcja } from "./RezerwacjaSekcja";
 
 export function ProfilStrzelnicy() {
   const { id } = useParams<{ id: string }>();
   const [strzelnica, setStrzelnica] = useState<Strzelnica | undefined>();
   const [osie, setOsie] = useState<Os[]>([]);
+  const [grafik, setGrafik] = useState<Grafik | undefined>();
   const [ladowanie, setLadowanie] = useState(true);
   const [blad, setBlad] = useState<string | undefined>();
 
@@ -21,6 +23,7 @@ export function ProfilStrzelnicy() {
         if (aktualne) {
           setStrzelnica(dane.strzelnica);
           setOsie(dane.osie);
+          setGrafik(dane.grafik);
         }
       })
       .catch((error) => {
@@ -41,7 +44,7 @@ export function ProfilStrzelnicy() {
   if (ladowanie) {
     return <p>Wczytywanie…</p>;
   }
-  if (blad || !strzelnica) {
+  if (blad || !strzelnica || !id) {
     return <p role="alert">{blad ?? "Nie znaleziono Profilu Strzelnicy"}</p>;
   }
 
@@ -65,6 +68,7 @@ export function ProfilStrzelnicy() {
           ))}
         </ul>
       )}
+      <RezerwacjaSekcja strzelnicaId={id} osie={osie} grafik={grafik} />
     </section>
   );
 }

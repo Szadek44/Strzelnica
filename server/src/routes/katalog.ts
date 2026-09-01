@@ -17,8 +17,11 @@ export function createKatalogRouter(repository: Repository): Router {
       return;
     }
 
-    const osie = await repository.listujOsieStrzelnicy(strzelnica.id);
-    res.status(200).json({ strzelnica, osie });
+    const [osie, grafik] = await Promise.all([
+      repository.listujOsieStrzelnicy(strzelnica.id),
+      repository.znajdzGrafikPoStrzelnicaId(strzelnica.id),
+    ]);
+    res.status(200).json({ strzelnica, osie, grafik });
   });
 
   return router;

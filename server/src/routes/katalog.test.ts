@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import request from "supertest";
 import { createApp } from "../app.js";
 import { InMemoryRepository } from "../domain/repository.js";
-import { osPayload, rejestracjaPayload, zarejestrujIZalogujAdministratoraStrzelnicy } from "../test/helpers.js";
+import {
+  osPayload,
+  przygotujStrzelniceZOsia,
+  rejestracjaPayload,
+  zarejestrujIZalogujAdministratoraStrzelnicy,
+} from "../test/helpers.js";
 
 describe("GET /api/katalog/strzelnice", () => {
   it("pokazuje wyłącznie zatwierdzone Strzelnice", async () => {
@@ -88,6 +93,17 @@ describe("GET /api/katalog/strzelnice/:id", () => {
     });
     expect(res.body.osie).toHaveLength(1);
     expect(res.body.osie[0]).toMatchObject({ nazwa: "Oś 1" });
+  });
+
+  it("dołącza grafik Strzelnicy, gdy jest ustawiony (potrzebny frontendowi do rezerwacji)", async () => {
+    const repository = new InMemoryRepository();
+    const app = createApp(repository);
+    const { strzelnicaId } = await przygotujStrzelniceZOsia(app, repository);
+
+    const res = await request(app).get(`/api/katalog/strzelnice/${strzelnicaId}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.grafik).toMatchObject({ dlugoscSlotuMinut: 60, limitAnulowaniaGodzin: 24 });
   });
 
   it("zwraca 404 dla oczekującej Strzelnicy", async () => {
