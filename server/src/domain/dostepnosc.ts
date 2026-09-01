@@ -1,4 +1,10 @@
-import { DNI_TYGODNIA, type DzienTygodnia, type GodzinyOtwarciaDnia, type Grafik } from "@strzelnica/shared";
+import {
+  DNI_TYGODNIA,
+  type DzienTygodnia,
+  type GodzinyOtwarcia,
+  type GodzinyOtwarciaDnia,
+  type Grafik,
+} from "@strzelnica/shared";
 
 const DATA_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -7,6 +13,20 @@ export function walidujFormatDaty(data: string): boolean {
     return false;
   }
   return !Number.isNaN(new Date(`${data}T00:00:00Z`).getTime());
+}
+
+/** Godziny otwarcia identyczne każdego dnia tygodnia, od `od` do `doGodz`. */
+export function calyTydzienOtwarte(od: string, doGodz: string): GodzinyOtwarcia {
+  return Object.fromEntries(
+    DNI_TYGODNIA.map((dzien) => [dzien, { otwarte: true, od, do: doGodz }]),
+  ) as GodzinyOtwarcia;
+}
+
+/** Data (RRRR-MM-DD) `dni` dni od dziś, w UTC, żeby wynik nie zależał od strefy czasowej maszyny. */
+export function dataZaDni(dni: number): string {
+  const data = new Date();
+  data.setUTCDate(data.getUTCDate() + dni);
+  return data.toISOString().slice(0, 10);
 }
 
 export function dzienTygodniaZDaty(data: string): DzienTygodnia {

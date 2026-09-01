@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import request from "supertest";
+import { calyTydzienOtwarte, dataZaDni } from "../domain/dostepnosc.js";
 import { InMemoryRepository } from "../domain/repository.js";
 import { hashPassword } from "../services/passwords.js";
 
@@ -65,8 +66,7 @@ export async function zarejestrujIZalogujAdministratoraStrzelnicy(
 }
 
 export function godzinyOtwarciaCalyTydzien(od = "08:00", doGodz = "20:00") {
-  const dni = ["poniedzialek", "wtorek", "sroda", "czwartek", "piatek", "sobota", "niedziela"] as const;
-  return Object.fromEntries(dni.map((dzien) => [dzien, { otwarte: true, od, do: doGodz }]));
+  return calyTydzienOtwarte(od, doGodz);
 }
 
 export function grafikPayload(overrides: Partial<Record<string, unknown>> = {}) {
@@ -88,11 +88,9 @@ export function osPayload(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
-/** Data (RRRR-MM-DD) `dni` dni od dziś, w UTC, żeby testy nie zależały od strefy czasowej maszyny CI. */
+/** Data (RRRR-MM-DD) `dni` dni od dziś, żeby testy nie zależały od strefy czasowej maszyny CI. */
 export function dataWPrzyszlosci(dni = 7): string {
-  const data = new Date();
-  data.setUTCDate(data.getUTCDate() + dni);
-  return data.toISOString().slice(0, 10);
+  return dataZaDni(dni);
 }
 
 /**

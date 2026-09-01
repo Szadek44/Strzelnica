@@ -1,4 +1,5 @@
 import { createApp } from "./app.js";
+import { czyZasiewacDanePrzykladowe, zasiejDanePrzykladowe } from "./domain/daneprzykladowe.js";
 import { InMemoryRepository } from "./domain/repository.js";
 import { hashPassword } from "./services/passwords.js";
 
@@ -14,6 +15,8 @@ await repository.utworzAdministratoraPlatformy({
   hasloHash: await hashPassword(DEMO_ADMIN_PLATFORMY_HASLO),
 });
 
+const wynikSeeda = czyZasiewacDanePrzykladowe() ? await zasiejDanePrzykladowe(repository) : undefined;
+
 const app = createApp(repository);
 
 app.listen(PORT, () => {
@@ -21,4 +24,10 @@ app.listen(PORT, () => {
   console.log(
     `Zasiano konto Administratora platformy: ${DEMO_ADMIN_PLATFORMY_EMAIL} (hasło z ADMIN_PLATFORMY_HASLO, domyślnie ustawione dla środowiska lokalnego)`,
   );
+  if (wynikSeeda) {
+    console.log("Zasiano dane przykładowe dla środowiska deweloperskiego. Administratorzy Strzelnicy:");
+    for (const administrator of wynikSeeda.administratorzy) {
+      console.log(`  - "${administrator.nazwaStrzelnicy}": ${administrator.email} / ${administrator.haslo}`);
+    }
+  }
 });
