@@ -4,6 +4,44 @@ import { createApp } from "../app.js";
 import { InMemoryRepository } from "../domain/repository.js";
 import { dataWPrzyszlosci, klientPayload, przygotujStrzelniceZOsia } from "../test/helpers.js";
 
+describe("GET /api/administratorzy-strzelnicy/blokady", () => {
+  it("pokazuje wyłącznie Blokady własnej Strzelnicy", async () => {
+    const repository = new InMemoryRepository();
+    const app = createApp(repository);
+    const pierwsza = await przygotujStrzelniceZOsia(app, repository, {
+      rejestracja: { adminEmail: "pierwsza-lista@strzelnica-testowa.pl" },
+    });
+    const druga = await przygotujStrzelniceZOsia(app, repository, {
+      rejestracja: { adminEmail: "druga-lista@strzelnica-testowa.pl" },
+    });
+    const data = dataWPrzyszlosci();
+    await request(app)
+      .post("/api/administratorzy-strzelnicy/blokady")
+      .set("Authorization", `Bearer ${pierwsza.token}`)
+      .send({ osId: pierwsza.os.id, data, slotOd: "10:00", czasTrwaniaMinut: 60, powod: "Awaria" });
+    await request(app)
+      .post("/api/administratorzy-strzelnicy/blokady")
+      .set("Authorization", `Bearer ${druga.token}`)
+      .send({ osId: druga.os.id, data, slotOd: "11:00", czasTrwaniaMinut: 60 });
+
+    const res = await request(app)
+      .get("/api/administratorzy-strzelnicy/blokady")
+      .set("Authorization", `Bearer ${pierwsza.token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.blokady).toHaveLength(1);
+    expect(res.body.blokady[0]).toMatchObject({ osId: pierwsza.os.id, powod: "Awaria" });
+  });
+
+  it("odrzuca żądanie bez tokenu Administratora strzelnicy", async () => {
+    const app = createApp(new InMemoryRepository());
+
+    const res = await request(app).get("/api/administratorzy-strzelnicy/blokady");
+
+    expect(res.status).toBe(401);
+  });
+});
+
 describe("POST /api/administratorzy-strzelnicy/blokady", () => {
   it("tworzy Blokadę na wybranej Osi i przedziale czasu", async () => {
     const repository = new InMemoryRepository();

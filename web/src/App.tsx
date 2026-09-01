@@ -11,6 +11,7 @@ import { PanelAdministratoraPlatformy } from "./pages/PanelAdministratoraPlatfor
 import { PanelAdministratoraStrzelnicy } from "./pages/PanelAdministratoraStrzelnicy";
 import { ProfilStrzelnicy } from "./pages/ProfilStrzelnicy";
 import { RejestracjaStrzelnicy } from "./pages/RejestracjaStrzelnicy";
+import { RezerwacjeBlokady } from "./pages/RezerwacjeBlokady";
 
 export function App() {
   return (
@@ -32,6 +33,7 @@ export function App() {
         >
           <Route index element={<p>Wybierz sekcję panelu z menu powyżej.</p>} />
           <Route path="grafik" element={<GrafikOsie />} />
+          <Route path="rezerwacje" element={<RezerwacjeBlokady />} />
         </Route>
         <Route path="/administrator-platformy/logowanie" element={<LogowanieAdministratoraPlatformy />} />
         <Route

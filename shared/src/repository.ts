@@ -121,4 +121,6 @@ export interface Repository {
   usunBlokade(id: string, strzelnicaId: string): Promise<boolean>;
 
   listujAktywneBlokadyOsiWDniu(osId: string, data: string): Promise<Blokada[]>;
+
+  listujBlokadyStrzelnicy(strzelnicaId: string): Promise<Blokada[]>;
 }

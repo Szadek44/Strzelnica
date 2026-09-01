@@ -237,4 +237,8 @@ export class InMemoryRepository implements Repository {
   async listujAktywneBlokadyOsiWDniu(osId: string, data: string): Promise<Blokada[]> {
     return [...this.blokady.values()].filter((blokada) => blokada.osId === osId && blokada.data === data);
   }
+
+  async listujBlokadyStrzelnicy(strzelnicaId: string): Promise<Blokada[]> {
+    return [...this.blokady.values()].filter((blokada) => blokada.strzelnicaId === strzelnicaId);
+  }
 }

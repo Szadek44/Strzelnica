@@ -40,6 +40,16 @@ function walidujBlad(body: UtworzBlokadeBody): string | undefined {
 export function createBlokadyRouter(repository: Repository, sessions: SessionStore): Router {
   const router = Router();
 
+  router.get(
+    "/api/administratorzy-strzelnicy/blokady",
+    wymagaRoli(sessions, "administratorStrzelnicy"),
+    async (req, res) => {
+      const strzelnicaId = strzelnicaIdZSesji(req);
+      const blokady = await repository.listujBlokadyStrzelnicy(strzelnicaId);
+      res.status(200).json({ blokady });
+    },
+  );
+
   router.post(
     "/api/administratorzy-strzelnicy/blokady",
     wymagaRoli(sessions, "administratorStrzelnicy"),
