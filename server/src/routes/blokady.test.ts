@@ -54,6 +54,24 @@ describe("POST /api/administratorzy-strzelnicy/blokady", () => {
     expect(res.status).toBe(400);
   });
 
+  it("odrzuca Blokadę kolidującą z inną Blokadą", async () => {
+    const repository = new InMemoryRepository();
+    const app = createApp(repository);
+    const { token, os } = await przygotujStrzelniceZOsia(app, repository);
+    const data = dataWPrzyszlosci();
+    await request(app)
+      .post("/api/administratorzy-strzelnicy/blokady")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ osId: os.id, data, slotOd: "10:00", czasTrwaniaMinut: 60 });
+
+    const res = await request(app)
+      .post("/api/administratorzy-strzelnicy/blokady")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ osId: os.id, data, slotOd: "10:00", czasTrwaniaMinut: 60 });
+
+    expect(res.status).toBe(400);
+  });
+
   it("odrzuca żądanie bez tokenu Administratora strzelnicy", async () => {
     const app = createApp(new InMemoryRepository());
 

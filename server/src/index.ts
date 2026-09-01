@@ -4,8 +4,8 @@ import { hashPassword } from "./services/passwords.js";
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
-const DEMO_ADMIN_PLATFORMY_EMAIL = "admin@platforma.pl";
-const DEMO_ADMIN_PLATFORMY_HASLO = "admin1234";
+const DEMO_ADMIN_PLATFORMY_EMAIL = process.env.ADMIN_PLATFORMY_EMAIL ?? "admin@platforma.pl";
+const DEMO_ADMIN_PLATFORMY_HASLO = process.env.ADMIN_PLATFORMY_HASLO ?? "admin1234";
 
 const repository = new InMemoryRepository();
 
@@ -19,6 +19,6 @@ const app = createApp(repository);
 app.listen(PORT, () => {
   console.log(`Server startuje na porcie ${PORT}`);
   console.log(
-    `Demo Administrator platformy: ${DEMO_ADMIN_PLATFORMY_EMAIL} / ${DEMO_ADMIN_PLATFORMY_HASLO}`,
+    `Zasiano konto Administratora platformy: ${DEMO_ADMIN_PLATFORMY_EMAIL} (hasło z ADMIN_PLATFORMY_HASLO, domyślnie ustawione dla środowiska lokalnego)`,
   );
 });

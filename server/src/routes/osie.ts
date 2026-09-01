@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { Repository } from "@strzelnica/shared";
 import { wymagaRoli } from "../middleware/autoryzacja.js";
-import type { RequestZSesja } from "../middleware/autoryzacja.js";
+import { strzelnicaIdZSesji } from "./kontekstStrzelnicy.js";
 import type { SessionStore } from "../services/sessions.js";
 
 interface DodajOsBody {
@@ -45,7 +45,7 @@ export function createOsieRouter(repository: Repository, sessions: SessionStore)
         return;
       }
 
-      const { strzelnicaId } = (req as RequestZSesja).sesja as { strzelnicaId: string };
+      const strzelnicaId = strzelnicaIdZSesji(req);
       const os = await repository.dodajOs({
         strzelnicaId,
         nazwa: body.nazwa as string,
@@ -62,7 +62,7 @@ export function createOsieRouter(repository: Repository, sessions: SessionStore)
     "/api/administratorzy-strzelnicy/osie",
     wymagaRoli(sessions, "administratorStrzelnicy"),
     async (req, res) => {
-      const { strzelnicaId } = (req as RequestZSesja).sesja as { strzelnicaId: string };
+      const strzelnicaId = strzelnicaIdZSesji(req);
       const osie = await repository.listujOsieStrzelnicy(strzelnicaId);
       res.status(200).json({ osie });
     },

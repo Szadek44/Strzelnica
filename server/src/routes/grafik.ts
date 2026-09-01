@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { DNI_TYGODNIA, type GodzinyOtwarcia, type GodzinyOtwarciaDnia, type Repository } from "@strzelnica/shared";
 import { wymagaRoli } from "../middleware/autoryzacja.js";
-import type { RequestZSesja } from "../middleware/autoryzacja.js";
+import { strzelnicaIdZSesji } from "./kontekstStrzelnicy.js";
 import type { SessionStore } from "../services/sessions.js";
 
 const CZAS_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -74,7 +74,7 @@ export function createGrafikRouter(repository: Repository, sessions: SessionStor
         return;
       }
 
-      const { strzelnicaId } = (req as RequestZSesja).sesja as { strzelnicaId: string };
+      const strzelnicaId = strzelnicaIdZSesji(req);
       const grafik = await repository.ustawGrafik(strzelnicaId, {
         dlugoscSlotuMinut: body.dlugoscSlotuMinut as number,
         limitAnulowaniaGodzin: body.limitAnulowaniaGodzin as number,
@@ -89,7 +89,7 @@ export function createGrafikRouter(repository: Repository, sessions: SessionStor
     "/api/administratorzy-strzelnicy/grafik",
     wymagaRoli(sessions, "administratorStrzelnicy"),
     async (req, res) => {
-      const { strzelnicaId } = (req as RequestZSesja).sesja as { strzelnicaId: string };
+      const strzelnicaId = strzelnicaIdZSesji(req);
       const grafik = await repository.znajdzGrafikPoStrzelnicaId(strzelnicaId);
       if (!grafik) {
         res.status(404).json({ blad: "Grafik nie został jeszcze ustawiony" });

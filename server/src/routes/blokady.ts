@@ -1,16 +1,9 @@
 import { Router } from "express";
 import type { Repository } from "@strzelnica/shared";
-import {
-  czyBlokMiesciSieWSlotach,
-  dzienTygodniaZDaty,
-  obliczPotrzebneSloty,
-  slotyRezerwacji,
-  walidujFormatDaty,
-  wygenerujSlotyDnia,
-} from "../domain/dostepnosc.js";
-import { czyBlad, zaladujOs } from "./kontekstStrzelnicy.js";
+import { czyBlokMiesciSieWSlotach, obliczPotrzebneSloty, walidujFormatDaty } from "../domain/dostepnosc.js";
+import { czyBlad, strzelnicaIdZSesji, zaladujOs } from "./kontekstStrzelnicy.js";
+import { wolneSloty } from "./rezerwacje.js";
 import { wymagaRoli } from "../middleware/autoryzacja.js";
-import type { RequestZSesja } from "../middleware/autoryzacja.js";
 import type { SessionStore } from "../services/sessions.js";
 
 interface UtworzBlokadeBody {
@@ -65,7 +58,7 @@ export function createBlokadyRouter(repository: Repository, sessions: SessionSto
         powod: body.powod as string | undefined,
       };
 
-      const { strzelnicaId } = (req as RequestZSesja).sesja as { strzelnicaId: string };
+      const strzelnicaId = strzelnicaIdZSesji(req);
       const os = await zaladujOs(repository, strzelnicaId, dane.osId);
       if (czyBlad(os)) {
         res.status(os.status).json({ blad: os.blad });
@@ -84,21 +77,11 @@ export function createBlokadyRouter(repository: Repository, sessions: SessionSto
       }
       const { liczbaSlotow, sloty: potrzebneSloty } = potrzebne;
 
-      const dzienTygodnia = dzienTygodniaZDaty(dane.data);
-      const slotyDnia = wygenerujSlotyDnia(grafik.godzinyOtwarcia[dzienTygodnia], grafik.dlugoscSlotuMinut);
-      if (!czyBlokMiesciSieWSlotach(potrzebneSloty, slotyDnia)) {
-        res.status(400).json({ blad: "Wybrany przedział czasu wykracza poza godziny otwarcia" });
-        return;
-      }
-
-      const rezerwacje = await repository.listujAktywneRezerwacjeOsiWDniu(dane.osId, dane.data);
-      const zajeteRezerwacjami = new Set(
-        rezerwacje.flatMap((rezerwacja) =>
-          slotyRezerwacji(rezerwacja.slotOd, rezerwacja.liczbaSlotow, grafik.dlugoscSlotuMinut),
-        ),
-      );
-      if (potrzebneSloty.some((slot) => zajeteRezerwacjami.has(slot))) {
-        res.status(400).json({ blad: "Wybrany przedział czasu koliduje z potwierdzoną Rezerwacją" });
+      const dostepne = await wolneSloty(repository, dane.osId, dane.data, grafik);
+      if (!czyBlokMiesciSieWSlotach(potrzebneSloty, dostepne)) {
+        res.status(400).json({
+          blad: "Wybrany przedział czasu wykracza poza godziny otwarcia lub koliduje z potwierdzoną Rezerwacją albo inną Blokadą",
+        });
         return;
       }
 
@@ -119,7 +102,7 @@ export function createBlokadyRouter(repository: Repository, sessions: SessionSto
     "/api/administratorzy-strzelnicy/blokady/:id",
     wymagaRoli(sessions, "administratorStrzelnicy"),
     async (req, res) => {
-      const { strzelnicaId } = (req as RequestZSesja).sesja as { strzelnicaId: string };
+      const strzelnicaId = strzelnicaIdZSesji(req);
       const usunieto = await repository.usunBlokade(req.params.id, strzelnicaId);
       if (!usunieto) {
         res.status(404).json({ blad: "Nie znaleziono Blokady" });

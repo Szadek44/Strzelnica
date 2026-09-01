@@ -1,6 +1,18 @@
+import type { Request } from "express";
 import type { Grafik, Os, Repository, Strzelnica } from "@strzelnica/shared";
+import type { RequestZSesja } from "../middleware/autoryzacja.js";
 
 export type Blad = { blad: string; status: number };
+
+/**
+ * Wywoływać tylko za `wymagaRoli(sessions, "administratorStrzelnicy")` — ta
+ * bramka gwarantuje w runtime, że `sesja` niesie `strzelnicaId`, czego typ
+ * `Sesja` (unia po roli) nie odda bez zwężenia.
+ */
+export function strzelnicaIdZSesji(req: Request): string {
+  const { sesja } = req as RequestZSesja;
+  return (sesja as { strzelnicaId: string }).strzelnicaId;
+}
 
 export function czyBlad<T>(kontekst: T | Blad): kontekst is Blad {
   return typeof kontekst === "object" && kontekst !== null && "blad" in kontekst;
