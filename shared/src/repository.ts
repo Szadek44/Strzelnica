@@ -55,6 +55,8 @@ export interface Repository {
 
   listujStrzelniceOczekujace(): Promise<Strzelnica[]>;
 
+  listujStrzelniceZatwierdzone(filtrTekstowy?: string): Promise<Strzelnica[]>;
+
   zatwierdzStrzelnice(id: string): Promise<Strzelnica | undefined>;
 
   utworzAdministratoraPlatformy(

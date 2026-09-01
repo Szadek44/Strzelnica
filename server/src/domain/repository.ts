@@ -81,6 +81,21 @@ export class InMemoryRepository implements Repository {
     return [...this.strzelnice.values()].filter((strzelnica) => strzelnica.status === "oczekujaca");
   }
 
+  async listujStrzelniceZatwierdzone(filtrTekstowy?: string): Promise<Strzelnica[]> {
+    const filtr = filtrTekstowy?.trim().toLowerCase();
+    return [...this.strzelnice.values()].filter((strzelnica) => {
+      if (strzelnica.status !== "zatwierdzona") {
+        return false;
+      }
+      if (!filtr) {
+        return true;
+      }
+      return (
+        strzelnica.nazwa.toLowerCase().includes(filtr) || strzelnica.adres.toLowerCase().includes(filtr)
+      );
+    });
+  }
+
   async zatwierdzStrzelnice(id: string): Promise<Strzelnica | undefined> {
     const strzelnica = this.strzelnice.get(id);
     if (!strzelnica) {
