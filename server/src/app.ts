@@ -7,6 +7,7 @@ import { createDevRouter } from "./routes/dev.js";
 import { createGrafikRouter } from "./routes/grafik.js";
 import { createKatalogRouter } from "./routes/katalog.js";
 import { createOsieRouter } from "./routes/osie.js";
+import { createRezerwacjeRouter } from "./routes/rezerwacje.js";
 import { createStrzelniceRouter } from "./routes/strzelnice.js";
 import { SessionStore } from "./services/sessions.js";
 
@@ -21,6 +22,7 @@ export function createApp(repository: Repository): Express {
   app.use(createGrafikRouter(repository, sessions));
   app.use(createOsieRouter(repository, sessions));
   app.use(createKatalogRouter(repository));
+  app.use(createRezerwacjeRouter(repository));
   app.use(createDevRouter(repository));
   return app;
 }

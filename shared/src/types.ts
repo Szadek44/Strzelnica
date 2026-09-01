@@ -65,3 +65,21 @@ export interface Os {
   dozwoloneTypyBroni: string[];
   cenaZaSlot: number;
 }
+
+export type StatusRezerwacji = "potwierdzona" | "anulowana";
+
+export interface Rezerwacja {
+  id: string;
+  strzelnicaId: string;
+  osIds: string[];
+  data: string;
+  slotOd: string;
+  liczbaSlotow: number;
+  cenaCalkowita: number;
+  klientImie: string;
+  klientTelefon: string;
+  klientEmail: string;
+  tokenAnulowania: string;
+  status: StatusRezerwacji;
+  utworzonoAt: string;
+}

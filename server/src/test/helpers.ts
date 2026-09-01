@@ -87,3 +87,50 @@ export function osPayload(overrides: Partial<Record<string, unknown>> = {}) {
     ...overrides,
   };
 }
+
+/** Data (RRRR-MM-DD) `dni` dni od dziś, w UTC, żeby testy nie zależały od strefy czasowej maszyny CI. */
+export function dataWPrzyszlosci(dni = 7): string {
+  const data = new Date();
+  data.setUTCDate(data.getUTCDate() + dni);
+  return data.toISOString().slice(0, 10);
+}
+
+/**
+ * Rejestruje i zatwierdza Strzelnicę, ustawia grafik otwarty całą dobę-ish
+ * (08:00-20:00 każdego dnia) i dodaje jedną Oś — punkt wyjścia dla testów
+ * dostępności i rezerwacji.
+ */
+export async function przygotujStrzelniceZOsia(
+  app: Express,
+  repository: InMemoryRepository,
+  overrides: {
+    rejestracja?: Partial<Record<string, string>>;
+    grafik?: Partial<Record<string, unknown>>;
+    os?: Partial<Record<string, unknown>>;
+  } = {},
+) {
+  const { token, strzelnicaId } = await zarejestrujIZalogujAdministratoraStrzelnicy(
+    app,
+    repository,
+    overrides.rejestracja,
+  );
+  await request(app)
+    .put("/api/administratorzy-strzelnicy/grafik")
+    .set("Authorization", `Bearer ${token}`)
+    .send(grafikPayload(overrides.grafik));
+  const osRes = await request(app)
+    .post("/api/administratorzy-strzelnicy/osie")
+    .set("Authorization", `Bearer ${token}`)
+    .send(osPayload(overrides.os));
+
+  return { token, strzelnicaId, os: osRes.body.os as { id: string; cenaZaSlot: number; nazwa: string } };
+}
+
+export function klientPayload(overrides: Partial<Record<string, string>> = {}) {
+  return {
+    klientImie: "Jan Kowalski",
+    klientTelefon: "600100200",
+    klientEmail: "jan.kowalski@example.com",
+    ...overrides,
+  };
+}

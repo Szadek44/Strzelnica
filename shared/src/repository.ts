@@ -4,6 +4,7 @@ import type {
   Grafik,
   GodzinyOtwarcia,
   Os,
+  Rezerwacja,
   Strzelnica,
   WpisLoguMaili,
 } from "./types.js";
@@ -36,6 +37,18 @@ export interface DaneDodaniaOsi {
   dystansMetrow: number;
   dozwoloneTypyBroni: string[];
   cenaZaSlot: number;
+}
+
+export interface DaneUtworzeniaRezerwacji {
+  strzelnicaId: string;
+  osIds: string[];
+  data: string;
+  slotOd: string;
+  liczbaSlotow: number;
+  cenaCalkowita: number;
+  klientImie: string;
+  klientTelefon: string;
+  klientEmail: string;
 }
 
 export interface Repository {
@@ -82,4 +95,8 @@ export interface Repository {
   znajdzOsPoId(id: string): Promise<Os | undefined>;
 
   listujOsieStrzelnicy(strzelnicaId: string): Promise<Os[]>;
+
+  utworzRezerwacje(dane: DaneUtworzeniaRezerwacji): Promise<Rezerwacja>;
+
+  listujAktywneRezerwacjeOsiWDniu(osId: string, data: string): Promise<Rezerwacja[]>;
 }

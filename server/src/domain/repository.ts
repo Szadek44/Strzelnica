@@ -6,9 +6,11 @@ import type {
   DaneDodaniaOsi,
   DaneGrafiku,
   DaneRejestracjiStrzelnicy,
+  DaneUtworzeniaRezerwacji,
   Grafik,
   Os,
   Repository,
+  Rezerwacja,
   Strzelnica,
   WpisLoguMaili,
 } from "@strzelnica/shared";
@@ -24,6 +26,7 @@ export class InMemoryRepository implements Repository {
   private readonly logMaili: WpisLoguMaili[] = [];
   private readonly grafiki = new Map<string, Grafik>();
   private readonly osie = new Map<string, Os>();
+  private readonly rezerwacje = new Map<string, Rezerwacja>();
 
   async utworzStrzelnice(
     dane: DaneRejestracjiStrzelnicy,
@@ -167,5 +170,26 @@ export class InMemoryRepository implements Repository {
 
   async listujOsieStrzelnicy(strzelnicaId: string): Promise<Os[]> {
     return [...this.osie.values()].filter((os) => os.strzelnicaId === strzelnicaId);
+  }
+
+  async utworzRezerwacje(dane: DaneUtworzeniaRezerwacji): Promise<Rezerwacja> {
+    const rezerwacja: Rezerwacja = {
+      id: randomUUID(),
+      tokenAnulowania: randomUUID(),
+      status: "potwierdzona",
+      utworzonoAt: new Date().toISOString(),
+      ...dane,
+    };
+    this.rezerwacje.set(rezerwacja.id, rezerwacja);
+    return rezerwacja;
+  }
+
+  async listujAktywneRezerwacjeOsiWDniu(osId: string, data: string): Promise<Rezerwacja[]> {
+    return [...this.rezerwacje.values()].filter(
+      (rezerwacja) =>
+        rezerwacja.status === "potwierdzona" &&
+        rezerwacja.data === data &&
+        rezerwacja.osIds.includes(osId),
+    );
   }
 }
