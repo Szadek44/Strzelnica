@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { WymagaAdministratoraPlatformy } from "./auth/WymagaAdministratoraPlatformy";
 import { WymagaAdministratoraStrzelnicy } from "./auth/WymagaAdministratoraStrzelnicy";
+import { GrafikOsie } from "./pages/GrafikOsie";
 import { Home } from "./pages/Home";
 import { LogowanieAdministratoraPlatformy } from "./pages/LogowanieAdministratoraPlatformy";
 import { LogowanieAdministratoraStrzelnicy } from "./pages/LogowanieAdministratoraStrzelnicy";
@@ -23,6 +24,7 @@ export function App() {
         }
       >
         <Route index element={<p>Wybierz sekcję panelu z menu powyżej.</p>} />
+        <Route path="grafik" element={<GrafikOsie />} />
       </Route>
       <Route path="/administrator-platformy/logowanie" element={<LogowanieAdministratoraPlatformy />} />
       <Route
